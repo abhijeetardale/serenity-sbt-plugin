@@ -2,6 +2,7 @@ package com.tysafe.sbt.serenity
 
 import net.serenitybdd.plugins.sbt.SerenityPluginExtension
 import sbt.Keys._
+import sbt.Tests.Cleanup
 import sbt._
 import plugins._
 
@@ -11,6 +12,9 @@ object SerenitySbtPlugin extends AutoPlugin with SerenityPluginExtension {
 
   object autoImport {
     val serenityReportTask = taskKey[Unit]("Serenity sbt report task")
+    val clearReports = taskKey[Unit]("Serenity sbt task to delete report directory")
+    val historyReports = taskKey[Unit]("Serenity sbt task to create history")
+    val clearHistory = taskKey[Unit]("Serenity sbt task to delete history")
   }
 
   import autoImport._
@@ -41,11 +45,36 @@ object SerenitySbtPlugin extends AutoPlugin with SerenityPluginExtension {
       }
     }).evaluated,
 
+    clean := {
+      clearReports.dependsOn((clean).result).value
+    },
+
+    clearReports := {
+      System.setProperty("project.build.directory", baseDirectory.value.getAbsolutePath)
+      println("cleaning serenity report directory.")
+      clearReportFiles()
+    },
+
+    clearHistory := {
+      System.setProperty("project.build.directory", baseDirectory.value.getAbsolutePath)
+      println("cleaning serenity report history.")
+      clearHistoryFiles()
+    },
+
+    historyReports := {
+      System.setProperty("project.build.directory", baseDirectory.value.getAbsolutePath)
+      println("generating Serenity report history.")
+      generateHistory()
+    },
+
+
     serenityReportTask := {
       System.setProperty("project.build.directory", baseDirectory.value.getAbsolutePath)
-      println("Generating Serenity report.")
+      println("generating Serenity report.")
       execute()
     }
+
+
 
   )
 
