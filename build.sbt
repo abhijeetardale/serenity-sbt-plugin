@@ -18,7 +18,9 @@ libraryDependencies ++= Seq(
   "net.serenity-bdd" % "serenity-core" % "1.9.12",
   "net.serenity-bdd" % "serenity-cucumber" % "1.9.5",
   "net.serenity-bdd" % "serenity-junit" % "1.9.12",
-  "org.scalatest" % "scalatest_2.12" % "3.0.5"
+  "net.serenity-bdd" % "serenity-jira-plugin" % "1.1.1",
+  "org.scalatest" % "scalatest_2.12" % "3.0.5",
+  "org.slf4j" % "slf4j-simple" % "1.7.21"
 )
 
 publishMavenStyle := false
