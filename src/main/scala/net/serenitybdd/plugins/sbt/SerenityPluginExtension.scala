@@ -22,25 +22,26 @@ import scala.reflect.runtime.{ universe => ru }
 
 
 trait SerenityPluginExtension {
-  val environmentVariables = Injectors.getInjector.getProvider(classOf[EnvironmentVariables]).get
-  val systemPropertiesConfiguration = Injectors.getInjector.getProvider(classOf[SystemPropertiesConfiguration]).get
+  def environmentVariables = Injectors.getInjector.getProvider(classOf[EnvironmentVariables]).get
+  def systemPropertiesConfiguration = Injectors.getInjector.getProvider(classOf[SystemPropertiesConfiguration]).get
 
 
-  def configuration = Injectors.getInjector().getProvider(classOf[Configuration]).get()
-  def outputDirectory = configuration.getOutputDirectory()
-  def historyDirectory = configuration.getHistoryDirectory()
-  def sourceDirectory = outputDirectory
+  lazy val configuration = Injectors.getInjector().getProvider(classOf[Configuration]).get()
+  lazy val outputDirectory = configuration.getOutputDirectory()
+  lazy val historyDirectory = configuration.getHistoryDirectory()
+  lazy val sourceDirectory = outputDirectory
 
-  def issueTrackerUrl = environmentVariables.getProperty("jira.url")
-  def jiraUrl = environmentVariables.getProperty("jira.url")
-  def jiraUsername = environmentVariables.getProperty("jira.username")
-  def jiraPassword = environmentVariables.getProperty("jira.password")
-  def jiraProject = environmentVariables.getProperty("jira.project")
+  lazy val issueTrackerUrl = environmentVariables.getProperty("jira.url")
+  lazy val jiraUrl = environmentVariables.getProperty("jira.url")
+  lazy val jiraUsername = environmentVariables.getProperty("jira.username")
+  lazy val jiraPassword = environmentVariables.getProperty("jira.password")
+  lazy val jiraProject = environmentVariables.getProperty("jira.project")
+  lazy val tags = environmentVariables.getProperty("cucumber.options.tags")
 
-  def DEFAULT_HISTORY_DIRECTORY: String  = environmentVariables.getProperty("history", "history")
+  lazy val DEFAULT_HISTORY_DIRECTORY: String  = environmentVariables.getProperty("history", "history")
 
-  def requirementBaseDir: String  = environmentVariables.getProperty("serenity.test.requirements.basedir")
-  def generateOutcomes: Boolean  = true
+  lazy val requirementBaseDir: String  = environmentVariables.getProperty(ThucydidesSystemProperty.SERENITY_TEST_REQUIREMENTS_BASEDIR.getPropertyName)
+  lazy val generateOutcomes: Boolean  = true
 
   def projectKey = Serenity.getDefaultProjectKey
 
@@ -67,7 +68,8 @@ trait SerenityPluginExtension {
     reporter.setJiraProject(jiraProject)
     reporter.setJiraUsername(jiraUsername)
     reporter.setJiraPassword(jiraPassword)
-    reporter.setTags("")
+    reporter
+    //reporter.setTags(tags)
     if (generateOutcomes) {
       reporter.setGenerateTestOutcomeReports
      }
@@ -111,6 +113,10 @@ trait SerenityPluginExtension {
 
 
   def execute() =  {
+
+    if (historyDirectory.exists) {
+      clearHistoryFiles()
+    }
 
     configureEnvironmentVariables()
 
