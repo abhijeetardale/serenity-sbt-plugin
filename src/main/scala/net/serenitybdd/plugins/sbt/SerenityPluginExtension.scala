@@ -132,7 +132,7 @@ trait SerenityPluginExtension {
   private def reportFrom(key: String): Option[UserStoryTestReporter] = {
     val reportClass = environmentVariables.getProperty(key)
     try {
-      val action = Class.forName(reportClass).newInstance()
+      val action = Class.forName(reportClass).getConstructor().newInstance()
       Some(action.asInstanceOf[UserStoryTestReporter])
     } catch {
       case e: Any => {
