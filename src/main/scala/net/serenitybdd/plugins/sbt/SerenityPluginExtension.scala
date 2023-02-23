@@ -16,17 +16,21 @@ import net.thucydides.core.reports.html.HtmlAggregateStoryReporter
 import net.thucydides.core.util.EnvironmentVariables
 import net.thucydides.core.webdriver.Configuration
 import org.apache.commons.io.FileUtils
-import sbt.Keys._
-;
-import scala.reflect.runtime.{ universe => ru }
-
+import sbt.Keys._;
+import scala.reflect.runtime.{universe => ru}
 
 trait SerenityPluginExtension {
-  def environmentVariables = Injectors.getInjector.getProvider(classOf[EnvironmentVariables]).get
-  def systemPropertiesConfiguration = Injectors.getInjector.getProvider(classOf[SystemPropertiesConfiguration]).get
+  def environmentVariables =
+    Injectors.getInjector.getProvider(classOf[EnvironmentVariables]).get
+  def systemPropertiesConfiguration = Injectors.getInjector
+    .getProvider(classOf[SystemPropertiesConfiguration])
+    .get
 
-
-  lazy val configuration = Injectors.getInjector().getProvider(classOf[Configuration]).get()
+  lazy val configuration =
+    Injectors
+      .getInjector()
+      .getProvider(classOf[Configuration[Configuration[_]]])
+      .get()
   lazy val outputDirectory = configuration.getOutputDirectory()
   lazy val historyDirectory = configuration.getHistoryDirectory()
   lazy val sourceDirectory = outputDirectory
@@ -38,26 +42,44 @@ trait SerenityPluginExtension {
   lazy val jiraProject = environmentVariables.getProperty("jira.project")
   lazy val tags = environmentVariables.getProperty("cucumber.options.tags")
 
-  lazy val DEFAULT_HISTORY_DIRECTORY: String  = environmentVariables.getProperty("history", "history")
+  lazy val DEFAULT_HISTORY_DIRECTORY: String =
+    environmentVariables.getProperty("history", "history")
 
-  lazy val requirementBaseDir: String  = environmentVariables.getProperty(ThucydidesSystemProperty.SERENITY_TEST_REQUIREMENTS_BASEDIR.getPropertyName)
-  lazy val generateOutcomes: Boolean  = true
+  lazy val requirementBaseDir: String = environmentVariables.getProperty(
+    ThucydidesSystemProperty.SERENITY_TEST_REQUIREMENTS_BASEDIR.getPropertyName
+  )
+  lazy val generateOutcomes: Boolean = true
 
   def projectKey = Serenity.getDefaultProjectKey
 
   def configureEnvironmentVariables() = {
     Locale.setDefault(Locale.ENGLISH)
-    updateSystemProperty(ThucydidesSystemProperty.SERENITY_PROJECT_KEY.getPropertyName, projectKey, Serenity.getDefaultProjectKey)
-    updateSystemProperty(ThucydidesSystemProperty.SERENITY_TEST_REQUIREMENTS_BASEDIR.getPropertyName, requirementBaseDir, environmentVariables.getProperty("user.dir"))
+    updateSystemProperty(
+      ThucydidesSystemProperty.SERENITY_PROJECT_KEY.getPropertyName,
+      projectKey,
+      Serenity.getDefaultProjectKey
+    )
+    updateSystemProperty(
+      ThucydidesSystemProperty.SERENITY_TEST_REQUIREMENTS_BASEDIR.getPropertyName,
+      requirementBaseDir,
+      environmentVariables.getProperty("user.dir")
+    )
     systemPropertiesConfiguration.reloadOutputDirectory()
   }
 
-  private def updateSystemProperty(key: String, value: String, defaultValue: String) {
-    environmentVariables.setProperty(key, Optional.ofNullable(value).orElse(defaultValue))
+  private def updateSystemProperty(
+      key: String,
+      value: String,
+      defaultValue: String
+  ) {
+    environmentVariables.setProperty(
+      key,
+      Optional.ofNullable(value).orElse(defaultValue)
+    )
   }
 
   @throws(classOf[IOException])
-  private def generateHtmlStoryReports() =  {
+  private def generateHtmlStoryReports() = {
 
     val reporter = new HtmlAggregateStoryReporter(projectKey);
 
@@ -68,17 +90,17 @@ trait SerenityPluginExtension {
     reporter.setJiraProject(jiraProject)
     reporter.setJiraUsername(jiraUsername)
     reporter.setJiraPassword(jiraPassword)
-    reporter
-    //reporter.setTags(tags)
+    // reporter
+    // reporter.setTags(tags)
     if (generateOutcomes) {
       reporter.setGenerateTestOutcomeReports
-     }
+    }
     reporter.generateReportsForTestResultsFrom(sourceDirectory)
   }
 
   private def generateCustomReports() = {
 
-    val customReporters  = getCustomReportsFor(environmentVariables)
+    val customReporters = getCustomReportsFor(environmentVariables)
 
     for (reporter <- customReporters) {
       reporter.generateReportsForTestResultsFrom(outputDirectory)
@@ -86,15 +108,24 @@ trait SerenityPluginExtension {
 
   }
 
-  private def getCustomReportsFor( environmentVariables: EnvironmentVariables): List[UserStoryTestReporter] = {
+  private def getCustomReportsFor(
+      environmentVariables: EnvironmentVariables
+  ): List[UserStoryTestReporter] = {
 
-    val allKeys = environmentVariables.getKeys().asInstanceOf[util.ArrayList[String]].toArray.foldLeft(List.empty[String]){
-      (a,b)=>if(b.ne(Nil) && b.isInstanceOf[String]){a++List(b.asInstanceOf[String])} else a
-    }
+    val allKeys = environmentVariables
+      .getKeys()
+      .asInstanceOf[util.ArrayList[String]]
+      .toArray
+      .foldLeft(List.empty[String]) { (a, b) =>
+        if (b.ne(Nil) && b.isInstanceOf[String]) {
+          a ++ List(b.asInstanceOf[String])
+        } else a
+      }
 
-    val keys = allKeys.filter(key => key.startsWith("serenity.custom.reporters."))
+    val keys =
+      allKeys.filter(key => key.startsWith("serenity.custom.reporters."))
 
-    keys.map(key=>reportFrom(key)).filter(_.isDefined).map(_.get)
+    keys.map(key => reportFrom(key)).filter(_.isDefined).map(_.get)
 
   }
 
@@ -103,16 +134,14 @@ trait SerenityPluginExtension {
     try {
       val action = Class.forName(reportClass).newInstance()
       Some(action.asInstanceOf[UserStoryTestReporter])
-    }
-    catch {
+    } catch {
       case e: Any => {
         None
       }
     }
   }
 
-
-  def execute() =  {
+  def execute() = {
 
     if (historyDirectory.exists) {
       clearHistoryFiles()
@@ -123,23 +152,21 @@ trait SerenityPluginExtension {
     try {
       generateHtmlStoryReports()
       generateCustomReports()
-    }
-    catch {
+    } catch {
       case e: IOException => {
         throw new IOException("Error generating aggregate serenity reports", e)
       }
     }
   }
 
-  def clearReportFiles() =  {
+  def clearReportFiles() = {
 
     configureEnvironmentVariables()
 
     try {
       FileUtils.deleteDirectory(FileUtils.getFile(outputDirectory.getParent))
-     // FileUtils.deleteDirectory(outputDirectory)
-    }
-    catch {
+      // FileUtils.deleteDirectory(outputDirectory)
+    } catch {
       case e: IOException => {
         throw new IOException("Error deleting serenity reports history", e)
       }
@@ -147,14 +174,13 @@ trait SerenityPluginExtension {
   }
 
   @throws(classOf[IOException])
-  def clearHistoryFiles() =  {
+  def clearHistoryFiles() = {
 
     configureEnvironmentVariables()
 
     try {
       FileUtils.deleteDirectory(historyDirectory)
-    }
-    catch {
+    } catch {
       case e: IOException => {
         throw new IOException("Error deleting serenity reports history", e)
       }
@@ -162,7 +188,7 @@ trait SerenityPluginExtension {
   }
 
   @throws(classOf[IOException])
-  def generateHistory() =  {
+  def generateHistory() = {
 
     if (!historyDirectory.exists) {
       historyDirectory.mkdirs
@@ -172,19 +198,23 @@ trait SerenityPluginExtension {
 
     try {
       FileUtils.deleteDirectory(historyDirectory)
-      new FileSystemTestOutcomeSummaryRecorder(historyDirectory.toPath,
-        deletePreviousHistory())
+      new FileSystemTestOutcomeSummaryRecorder(
+        historyDirectory.toPath,
+        deletePreviousHistory()
+      )
         .recordOutcomeSummariesFrom(sourceDirectory.toPath);
-    }
-    catch {
+    } catch {
       case e: IOException => {
         throw new IOException("Error generating serenity reports history", e)
       }
     }
   }
 
-  def deletePreviousHistory() : Boolean = {
-    environmentVariables.getPropertyAsBoolean(ThucydidesSystemProperty.DELETE_HISTORY_DIRECTORY, true)
+  def deletePreviousHistory(): Boolean = {
+    environmentVariables.getPropertyAsBoolean(
+      ThucydidesSystemProperty.DELETE_HISTORY_DIRECTORY,
+      true
+    )
   }
 
 }
