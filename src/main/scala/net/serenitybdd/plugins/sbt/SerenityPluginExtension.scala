@@ -16,8 +16,6 @@ import net.thucydides.core.reports.html.HtmlAggregateStoryReporter
 import net.thucydides.core.util.EnvironmentVariables
 import net.thucydides.core.webdriver.Configuration
 import org.apache.commons.io.FileUtils
-import sbt.Keys._;
-import scala.reflect.runtime.{universe => ru}
 
 trait SerenityPluginExtension {
   def environmentVariables =
@@ -91,9 +89,9 @@ trait SerenityPluginExtension {
     reporter.setJiraUsername(jiraUsername)
     reporter.setJiraPassword(jiraPassword)
     // reporter
-    // reporter.setTags(tags)
+    reporter.setTags(tags)
     if (generateOutcomes) {
-      reporter.setGenerateTestOutcomeReports
+      reporter.setGenerateTestOutcomeReports()
     }
     reporter.generateReportsForTestResultsFrom(sourceDirectory)
   }
